@@ -199,7 +199,7 @@ pub async fn fallback_handler() -> (StatusCode, &'static str) {
 }
 
 #[derive(Deserialize)]
-struct RapidsnarkProofResponse {
+pub struct RapidsnarkProofResponse {
     pi_a: [String; 3],
     pi_b: [[String; 2]; 3],
     pi_c: [String; 3],
@@ -215,7 +215,7 @@ impl RapidsnarkProofResponse {
     }
 }
 
-fn encode_proof(proof: &RapidsnarkProofResponse) -> Result<Groth16Proof> {
+pub fn encode_proof(proof: &RapidsnarkProofResponse) -> Result<Groth16Proof> {
     let new_pi_a = G1Bytes::new_unchecked(&proof.pi_a[0], &proof.pi_a[1])?;
     let new_pi_b = G2Bytes::new_unchecked(proof.pi_b_str()[0], proof.pi_b_str()[1])?;
     let new_pi_c = G1Bytes::new_unchecked(&proof.pi_c[0], &proof.pi_c[1])?;

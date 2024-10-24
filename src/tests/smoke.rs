@@ -6,6 +6,9 @@ use crate::tests::common::{
     types::{ProofTestCase, TestJWTPayload},
 };
 use serial_test::serial;
+use rust_rapidsnark::FullProver;
+use crate::load_vk::prepared_vk;
+use crate::handlers::encode_proof;
 
 #[tokio::test]
 #[serial]
@@ -195,5 +198,20 @@ async fn request_all_sub_lengths() {
             .compute_nonce(&get_test_circuit_config());
 
         convert_prove_and_verify(&testcase).await.unwrap();
+    }
+}
+
+#[test]
+fn dummy_circuit_load_test() {
+    let prover = FullProver::new("./resources/toy_circuit/toy_1.zkey").unwrap();
+
+    for _i in 0..1000 {
+        let (proof_json, _) = prover.prove("./resources/toy_circuit/toy.wtns").unwrap();
+
+        let proof = encode_proof(
+            &serde_json::from_str(proof_json).unwrap()
+        ).unwrap();
+        let g16vk = prepared_vk("./resources/toy_circuit/toy_vk.json");
+        proof.verify_proof(2.into(), &g16vk).unwrap();
     }
 }
