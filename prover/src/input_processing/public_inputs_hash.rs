@@ -249,4 +249,127 @@ mod tests {
             "18884813797014402005012488165063359209340898803829594097564044767682806702965"
         );
     }
+
+    #[test]
+    fn test_hashing_cognito_bad() {
+        let michael_pk_mod_str: &'static str =      "6S7asUuzq5Q_3U9rbs-PkDVIdjgmtgWreG5qWPsC9xXZKiMV1AiV9LXyqQsAYpCqEDM3XbfmZqGb48yLhb_XqZaKgSYaC_h2DjM7lgrIQAp9902Rr8fUmLN2ivr5tnLxUUOnMOc2SQtr9dgzTONYW5Zu3PwyvAWk5D6ueIUhLtYzpcB-etoNdL3Ir2746KIy_VUsDwAM7dhrqSK8U2xFCGlau4ikOTtvzDownAMHMrfE7q1B6WZQDAQlBmxRQsyKln5DIsKv6xauNsHRgBAKctUxZG8M4QJIx3S6Aughd3RZC4Ca5Ae9fd8L8mlNYBCrQhOZ7dS0f4at4arlLcajtw";
+        let michael_pk_kid_str: &'static str = "test-rsa";
+        let jwk = RSA_JWK::new_256_aqab(michael_pk_kid_str, michael_pk_mod_str);
+
+        let header = "eyJraWQiOiJaZlF5Y0xVcnQ5bnJhS05Cd1I1cnc5dEdcL1ZqWElyUFFUN3NXRFoxRGhoUT0iLCJhbGciOiJSUzI1NiJ9";
+        let payload = "eyJjdXN0b206a2V5X2V4aXN0cyI6IjAiLCJhdF9oYXNoIjoiVHFlSFZWampQZ09oZnEyLXh6d2ROUSIsInN1YiI6IjIxNGQ1OGY1LTQyMmUtNDY0Ni1hOTE1LWQxNjc3NzBhMGY2YyIsImNvZ25pdG86Z3JvdXBzIjpbImFwLW5vcnRoZWFzdC0xX1FVWVRPQ21MTl9Hb29nbGUiXSwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuYXAtbm9ydGhlYXN0LTEuYW1hem9uYXdzLmNvbVwvYXAtbm9ydGhlYXN0LTFfUVVZVE9DbUxOIiwiY29nbml0bzp1c2VybmFtZSI6Imdvb2dsZV8xMTE2Mjc3NzI0NjA3NTIzNDIzMTIiLCJub25jZSI6IjcwOTUyNDIzMzM5NjQ0NTcyNjc5MzQ3MjM3NjgwODAzMDMzMjQ0NjI4MjExOTE3NTY0MDk0NTAwOTk1MTk3ODEwNTE5MTAxODcxMTgiLCJvcmlnaW5fanRpIjoiZDEzNGFiZTAtN2RjMy00ZGZhLWE4ZGUtM2Y5YmM3MDJiMzI4IiwiYXVkIjoiMXAxMTB1MTRqbm5kNWU5OHFqNTVqa3ZuNmgiLCJpZGVudGl0aWVzIjpbeyJ1c2VySWQiOiIxMTE2Mjc3NzI0NjA3NTIzNDIzMTIiLCJwcm92aWRlck5hbWUiOiJHb29nbGUiLCJwcm92aWRlclR5cGUiOiJHb29nbGUiLCJpc3N1ZXIiOm51bGwsInByaW1hcnkiOiJ0cnVlIiwiZGF0ZUNyZWF0ZWQiOiIxNzMxNTc4NjgxMjk4In1dLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTczMTU3OTQ5OCwiY3VzdG9tOmV4cGlyYXRpb24iOiIxNzMxNTgyMjg5IiwiZXhwIjoxNzMxNTgzMDk4LCJpYXQiOjE3MzE1Nzk0OTgsImp0aSI6ImIxZjg5YjMyLWI1NDAtNGIyZS1iYjY0LWQ0YzlhZTYyMzQ4MiIsImVtYWlsIjoib2xpdmVyLmhlQGFwdG9zbGFicy5jb20ifQ";
+        let jwt_b64 = format!("{}.{}.cFBuulZGYotZNxjCSmw_rCc-Zj7Sb8gCBmspNkvoCsk", header, payload);
+        let ephemeral_private_key: Ed25519PrivateKey = EncodingType::Hex
+            .decode_key(
+                "zkid test ephemeral private key",
+                "0x76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7"
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .unwrap();
+        let ephemeral_public_key_unwrapped: Ed25519PublicKey =
+            Ed25519PublicKey::from(&ephemeral_private_key);
+        let epk = EphemeralPublicKey::ed25519(ephemeral_public_key_unwrapped);
+
+        let input = Input {
+            jwt_parts: JwtParts::from_b64(&jwt_b64).unwrap(),
+            jwk: Arc::new(jwk),
+            epk,
+            epk_blinder_fr: Fr::from_str("42").unwrap(),
+            exp_date_secs: 1900255944,
+            exp_horizon_secs: 100255944,
+            pepper_fr: Fr::from_str("76").unwrap(),
+            uid_key: String::from("sub"),
+            extra_field: None,
+            idc_aud: None,
+        };
+
+        let jwt_parts = &input.jwt_parts;
+        let _unsigned_jwt_no_padding = jwt_parts.unsigned_undecoded();
+        //let jwt_parts: Vec<&str> = input.jwt_b64.split(".").collect();
+        let _unsigned_jwt_with_padding = with_sha_padding_bytes(&jwt_parts.unsigned_undecoded());
+        let _signature = jwt_parts.signature().unwrap();
+        let payload_decoded = jwt_parts.payload_decoded().unwrap();
+
+        let _temp_pubkey_frs = poseidon_bn254::keyless::pad_and_pack_bytes_to_scalars_with_len(
+            input.epk.to_bytes().as_slice(),
+            Configuration::new_for_testing().max_commited_epk_bytes as usize, // TODO put my own thing here
+        )
+        .unwrap();
+
+        let config: CircuitConfig = serde_yaml::from_str(
+            &fs::read_to_string("conversion_config.yml").expect("Unable to read file"),
+        )
+        .expect("should parse correctly");
+
+        println!("full jwt: {}", jwt_b64);
+        println!(
+            "decoded payload: {}",
+            String::from_utf8(Vec::from(payload_decoded.as_bytes())).unwrap()
+        );
+
+        let hash = compute_public_inputs_hash(&input, &config).unwrap();
+    }
+
+    #[test]
+    fn test_hashing_cognito_good() {
+        let michael_pk_mod_str: &'static str =      "6S7asUuzq5Q_3U9rbs-PkDVIdjgmtgWreG5qWPsC9xXZKiMV1AiV9LXyqQsAYpCqEDM3XbfmZqGb48yLhb_XqZaKgSYaC_h2DjM7lgrIQAp9902Rr8fUmLN2ivr5tnLxUUOnMOc2SQtr9dgzTONYW5Zu3PwyvAWk5D6ueIUhLtYzpcB-etoNdL3Ir2746KIy_VUsDwAM7dhrqSK8U2xFCGlau4ikOTtvzDownAMHMrfE7q1B6WZQDAQlBmxRQsyKln5DIsKv6xauNsHRgBAKctUxZG8M4QJIx3S6Aughd3RZC4Ca5Ae9fd8L8mlNYBCrQhOZ7dS0f4at4arlLcajtw";
+        let michael_pk_kid_str: &'static str = "test-rsa";
+        let jwk = RSA_JWK::new_256_aqab(michael_pk_kid_str, michael_pk_mod_str);
+
+        let header = "eyJraWQiOiJaZlF5Y0xVcnQ5bnJhS05Cd1I1cnc5dEdcL1ZqWElyUFFUN3NXRFoxRGhoUT0iLCJhbGciOiJSUzI1NiJ9";
+        let payload = "eyJjdXN0b206a2V5X2V4aXN0cyI6IjAiLCJhdF9oYXNoIjoiVHFlSFZWampQZ09oZnEyLXh6d2ROUSIsInN1YiI6IjIxNGQ1OGY1LTQyMmUtNDY0Ni1hOTE1LWQxNjc3NzBhMGY2YyIsImNvZ25pdG86Z3JvdXBzIjpbImFwLW5vcnRoZWFzdC0xX1FVWVRPQ21MTl9Hb29nbGUiXSwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLW5vcnRoZWFzdC0xLmFtYXpvbmF3cy5jb20vYXAtbm9ydGhlYXN0LTFfUVVZVE9DbUxOIiwiY29nbml0bzp1c2VybmFtZSI6Imdvb2dsZV8xMTE2Mjc3NzI0NjA3NTIzNDIzMTIiLCJub25jZSI6IjcwOTUyNDIzMzM5NjQ0NTcyNjc5MzQ3MjM3NjgwODAzMDMzMjQ0NjI4MjExOTE3NTY0MDk0NTAwOTk1MTk3ODEwNTE5MTAxODcxMTgiLCJvcmlnaW5fanRpIjoiZDEzNGFiZTAtN2RjMy00ZGZhLWE4ZGUtM2Y5YmM3MDJiMzI4IiwiYXVkIjoiMXAxMTB1MTRqbm5kNWU5OHFqNTVqa3ZuNmgiLCJpZGVudGl0aWVzIjpbeyJ1c2VySWQiOiIxMTE2Mjc3NzI0NjA3NTIzNDIzMTIiLCJwcm92aWRlck5hbWUiOiJHb29nbGUiLCJwcm92aWRlclR5cGUiOiJHb29nbGUiLCJpc3N1ZXIiOm51bGwsInByaW1hcnkiOiJ0cnVlIiwiZGF0ZUNyZWF0ZWQiOiIxNzMxNTc4NjgxMjk4In1dLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTczMTU3OTQ5OCwiY3VzdG9tOmV4cGlyYXRpb24iOiIxNzMxNTgyMjg5IiwiZXhwIjoxNzMxNTgzMDk4LCJpYXQiOjE3MzE1Nzk0OTgsImp0aSI6ImIxZjg5YjMyLWI1NDAtNGIyZS1iYjY0LWQ0YzlhZTYyMzQ4MiIsImVtYWlsIjoib2xpdmVyLmhlQGFwdG9zbGFicy5jb20ifQ";
+        let jwt_b64 = format!("{}.{}.cFBuulZGYotZNxjCSmw_rCc-Zj7Sb8gCBmspNkvoCsk", header, payload);
+
+        let ephemeral_private_key: Ed25519PrivateKey = EncodingType::Hex
+            .decode_key(
+                "zkid test ephemeral private key",
+                "0x76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7"
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .unwrap();
+        let ephemeral_public_key_unwrapped: Ed25519PublicKey =
+            Ed25519PublicKey::from(&ephemeral_private_key);
+        let epk = EphemeralPublicKey::ed25519(ephemeral_public_key_unwrapped);
+
+        let input = Input {
+            jwt_parts: JwtParts::from_b64(&jwt_b64).unwrap(),
+            jwk: Arc::new(jwk),
+            epk,
+            epk_blinder_fr: Fr::from_str("42").unwrap(),
+            exp_date_secs: 1900255944,
+            exp_horizon_secs: 100255944,
+            pepper_fr: Fr::from_str("76").unwrap(),
+            uid_key: String::from("sub"),
+            extra_field: None,
+            idc_aud: None,
+        };
+
+        let jwt_parts = &input.jwt_parts;
+        let _unsigned_jwt_no_padding = jwt_parts.unsigned_undecoded();
+        //let jwt_parts: Vec<&str> = input.jwt_b64.split(".").collect();
+        let _unsigned_jwt_with_padding = with_sha_padding_bytes(&jwt_parts.unsigned_undecoded());
+        let _signature = jwt_parts.signature().unwrap();
+        let payload_decoded = jwt_parts.payload_decoded().unwrap();
+
+        let _temp_pubkey_frs = poseidon_bn254::keyless::pad_and_pack_bytes_to_scalars_with_len(
+            input.epk.to_bytes().as_slice(),
+            Configuration::new_for_testing().max_commited_epk_bytes as usize, // TODO put my own thing here
+        )
+        .unwrap();
+
+        let config: CircuitConfig = serde_yaml::from_str(
+            &fs::read_to_string("conversion_config.yml").expect("Unable to read file"),
+        )
+        .expect("should parse correctly");
+
+        println!("full jwt: {}", jwt_b64);
+        println!(
+            "decoded payload: {}",
+            String::from_utf8(Vec::from(payload_decoded.as_bytes())).unwrap()
+        );
+
+        let hash = compute_public_inputs_hash(&input, &config).unwrap();
+    }
 }
