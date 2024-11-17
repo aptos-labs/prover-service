@@ -7,7 +7,7 @@ The scripts in this repository will not work without installing the dependencies
 To install, please run:
 
 ```
-. ./tools/install-deps.sh
+./tools/install-deps.sh
 ```
 
 ## Run sub-circuit unittests
