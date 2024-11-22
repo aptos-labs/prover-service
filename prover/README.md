@@ -77,4 +77,5 @@ and in terminal 2 retry the request:
 ```bash
 ./scripts/make_request.sh http://localhost:8083 prover_request_payload.json
 ```
+
 you should see the logs become `use_new_setup=true` and `use_new_tw_keys=true` in terminal 1.
