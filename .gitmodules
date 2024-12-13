@@ -1,3 +1,6 @@
 [submodule "prover/rust-rapidsnark"]
 	path = prover/rust-rapidsnark
 	url = git@github.com:aptos-labs/rust-rapidsnark.git
+[submodule "setups/2024_05"]
+	path = setups/2024_05
+	url = https://github.com/aptos-labs/aptos-keyless-trusted-setup-contributions-may-2024.git
